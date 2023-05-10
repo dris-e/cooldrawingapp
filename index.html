@@ -1,0 +1,455 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>i like draw</title>
+    <link rel="stylesheet" type="text/css" href="styles.css">
+</head>
+<body>
+    <div class="controls" id="controlPalette">
+        <div id="colorPalette">
+            <button class="colorButton" style="background-color: rgba(255, 255, 255, 1);" data-color="rgba(255, 255, 255, 1)"></button>
+            <button class="colorButton" style="background-color: rgba(235, 124, 116, 1);" data-color="rgba(235, 124, 116, 1)"></button>
+            <button class="colorButton" style="background-color: rgba(220, 165, 93, 1);" data-color="rgba(220, 165, 93, 1)"></button>
+            <button class="colorButton" style="background-color: rgba(224, 220, 92, 1);" data-color="rgba(224, 220, 92, 1)"></button>
+            <button class="colorButton" style="background-color: rgba(25, 193, 127, 1);" data-color="rgba(25, 193, 127, 1)"></button>
+            <button class="colorButton" style="background-color: rgba(48, 154, 150, 1);" data-color="rgba(48, 154, 150, 1)"></button>
+            <button class="colorButton" style="background-color: rgba(168, 166, 219, 1);" data-color="rgba(168, 166, 219, 1)"></button>
+            <button class="colorButton" style="background-color: rgba(162, 34, 159, 1);" data-color="rgba(162, 34, 159, 1)"></button>
+            <button class="colorButton" style="background-color: rgba(0, 0, 0, 1);" data-color="rgba(0, 0, 0, .8)"></button>
+        </div>        
+    </div>
+    <div class="controls" id="controlMain">
+        <input id="size" type="range" min="4" max="50" value="6">
+        <button id="clearButton"><?xml version="1.0" ?><svg height="48" viewBox="0 0 48 48" width="48" xmlns="http://www.w3.org/2000/svg"><path d="M38 12.83l-2.83-2.83-11.17 11.17-11.17-11.17-2.83 2.83 11.17 11.17-11.17 11.17 2.83 2.83 11.17-11.17 11.17 11.17 2.83-2.83-11.17-11.17z"/><path d="M0 0h48v48h-48z" fill="none"/></svg></button>
+        <button id="eraserButton"><?xml version="1.0" ?><svg height="48" viewBox="0 0 48 48" width="48" xmlns="http://www.w3.org/2000/svg"><path d="M0 0h48v48h-48z" fill="none"/><path d="M14 28c-3.31 0-6 2.69-6 6 0 2.62-2.31 4-4 4 1.84 2.44 4.99 4 8 4 4.42 0 8-3.58 8-8 0-3.31-2.69-6-6-6zm27.41-18.74l-2.67-2.67c-.78-.78-2.05-.78-2.83 0l-17.91 17.91 5.5 5.5 17.91-17.91c.79-.79.79-2.05 0-2.83z"/></svg></button>
+    </div>
+    <div class="controls" id="controlLayers">
+        <button id="newLayer">New Layer</button>
+        <button id="deleteLayer">Delete Layer</button>
+        <div id="layers"></div>
+    </div>
+    <div class="controls" id="controlUndo">
+        <button id="undoButton"><?xml version="1.0" ?><svg height="48" viewBox="0 0 48 48" width="48" xmlns="http://www.w3.org/2000/svg" style="scale: 2.5"><path d="M30.83 14.83l-2.83-2.83-12 12 12 12 2.83-2.83-9.17-9.17z"/><path d="M0 0h48v48h-48z" fill="none"/></svg></button>
+    </div>
+    <div class="controls" id="controlRedo">
+        <button id="redoButton"><?xml version="1.0" ?><svg height="48" viewBox="0 0 48 48" width="48" xmlns="http://www.w3.org/2000/svg"  style="scale: 2.5"><path d="M20 12l-2.83 2.83 9.17 9.17-9.17 9.17 2.83 2.83 12-12z"/><path d="M0 0h48v48h-48z" fill="none"/></svg></button>
+    </div>
+    <p style="text-align: center; opacity: 0.5"> possibly ppropoerty of dris elamri<br>if you screenshot i sue you</p>
+    <div id="canvasContainer"></div>    
+    <canvas id="canvas" width="800" height="600"></canvas>
+    <script>
+        let canvas = document.getElementById('canvas');
+        let ctx = canvas.getContext('2d');
+        let tempCanvas = document.createElement('canvas');
+        let tempCtx = tempCanvas.getContext('2d');
+        let layers = [];
+        let activeLayerIndex = 0;
+        let activeCtx = ctx;
+        let layerColors = [];
+        let colorPalette = [
+    'rgba(255, 255, 255, 1)',  // White
+    'rgba(235, 124, 116, 1)',  // Red
+    'rgba(220, 165, 93, 1)',   // Orange
+    'rgba(224, 220, 92, 1)',   // Yellow
+    'rgba(25, 193, 127, 1)',   // Light Green
+    'rgba(48, 154, 150, 1)',   // Green
+    'rgba(168, 166, 219, 1)',  // Blue
+    'rgba(162, 34, 159, 1)',   // Purple
+    'rgba(0, 0, 0, 1)'         // Black
+];
+
+        function saveCanvas() {
+            let canvasData = layers.map((canvas, index) => {
+                return {
+                    index: index,
+                    dataUrl: canvas.toDataURL()
+                };
+            });
+            localStorage.setItem('savedCanvas', JSON.stringify(canvasData));
+        }
+
+        function loadCanvas() {
+            let savedCanvas = localStorage.getItem('savedCanvas');
+            if (savedCanvas) {
+                JSON.parse(savedCanvas).forEach(saved => {
+                    if (!layers[saved.index]) {
+                        addLayer();
+                    }
+                    let img = new Image();
+                    img.onload = function() {
+                        let ctx = layers[saved.index].getContext('2d');
+                        ctx.clearRect(0, 0, layers[saved.index].width, layers[saved.index].height);
+                        ctx.drawImage(img, 0, 0);
+                    };
+                    img.src = saved.dataUrl;
+                });
+            }
+        }
+
+        canvas.addEventListener('change', saveCanvas);
+        window.addEventListener('load', loadCanvas);
+
+        function resizeCanvas() {
+            layers.forEach(canvas => {
+                let tempCanvas = document.createElement('canvas');
+                let tempCtx = tempCanvas.getContext('2d');
+                tempCanvas.width = canvas.width;
+                tempCanvas.height = canvas.height;
+                tempCtx.drawImage(canvas, 0, 0);
+                canvas.width = window.innerWidth;
+                canvas.height = window.innerHeight;
+                canvas.getContext('2d').drawImage(tempCanvas, 0, 0);
+            });
+        }
+
+        resizeCanvas();
+
+        window.addEventListener('resize', resizeCanvas);
+
+        let painting = false;
+        let isErasing = false;
+        let currentColor = [];
+        let currentSize = 6;
+        let undoStack = []
+        let redoStack = [];
+
+        function saveState() {
+            undoStack.push(layers.map(layer => layer.toDataURL()));
+        }
+
+        function startPaint(e) {
+            painting = true;
+            draw(e);
+        }
+
+        function endPaint() {
+            painting = false;
+            activeCtx.beginPath();
+        }
+
+        function draw(e) {
+            let event = new Event('change');
+            layers[activeLayerIndex].dispatchEvent(event);
+            if (!painting) return;
+            activeCtx.lineWidth = document.getElementById('size').value;
+            activeCtx.lineCap = 'round';
+
+            activeCtx.strokeStyle = currentColor[activeLayerIndex];
+
+            activeCtx.lineTo(e.clientX - layers[activeLayerIndex].offsetLeft, e.clientY - layers[activeLayerIndex].offsetTop);
+            activeCtx.stroke();
+            activeCtx.beginPath();
+            activeCtx.moveTo(e.clientX - layers[activeLayerIndex].offsetLeft, e.clientY - layers[activeLayerIndex].offsetTop);
+            saveState();
+        }
+
+        canvas.addEventListener('mousedown', startPaint);
+        canvas.addEventListener('mouseup', endPaint);
+        canvas.addEventListener('mousemove', draw);
+
+        document.querySelectorAll('.colorButton').forEach(btn => {
+            btn.addEventListener('click', function(e) {
+                currentColor[activeLayerIndex] = this.dataset.color;
+            });
+        });
+
+        document.addEventListener('keydown', function(e) {
+            switch(e.keyCode) {
+                case 49:
+                    currentColor[activeLayerIndex] = 'rgba(255, 255, 255, 1)'; // White
+                    break;
+                case 50:
+                    currentColor[activeLayerIndex] = 'rgba(235, 124, 116, 1)'; // Red
+                    break;
+                case 51:
+                    currentColor[activeLayerIndex] = 'rgba(220, 165, 93, 1)'; // Orange
+                    break;
+                case 52:
+                    currentColor[activeLayerIndex] = 'rgba(224, 220, 92, 1)'; // Yellow
+                    break;
+                case 53:
+                    currentColor[activeLayerIndex] = 'rgba(25, 193, 127, 1)'; // Light Green
+                    break;
+                case 54:
+                    currentColor[activeLayerIndex] = 'rgba(48, 154, 150, 1)'; // Green
+                    break;
+                case 55:
+                    currentColor[activeLayerIndex] = 'rgba(168, 166, 219, 1)'; // Blue
+                    break;
+                case 56:
+                    currentColor[activeLayerIndex] = 'rgba(162, 34, 159, 1)'; // Purple
+                    break;
+                case 57:
+                    currentColor[activeLayerIndex] = 'rgba(0, 0, 0, 1)'; // Black
+                    break;
+                case 38: // Arrow up
+                    document.getElementById('size').value++;
+                    break;
+                case 40: // Arrow down
+                    document.getElementById('size').value--;
+                    break;
+            }
+        });
+
+        document.getElementById('clearButton').addEventListener('click', () => {
+            if (activeCtx) {
+                activeCtx.clearRect(0, 0, layers[activeLayerIndex].width, layers[activeLayerIndex].height);
+                let event = new Event('change');
+                layers[activeLayerIndex].dispatchEvent(event);
+            }
+        });
+
+        document.getElementById('eraserButton').addEventListener('click', () => {
+            isErasing = !isErasing;
+        });
+
+        canvas.addEventListener('mousemove', function(e) {
+            if (painting) {
+                activeCtx.globalCompositeOperation = isErasing ? 'destination-out' : 'source-over';
+                activeCtx.lineWidth = isErasing ? 10 : currentSize;
+                activeCtx.lineTo(e.clientX, e.clientY);
+                activeCtx.stroke();
+                activeCtx.beginPath();
+                activeCtx.moveTo(e.clientX, e.clientY);
+            }
+        });
+
+        function createLayer() {
+            const canvas = document.createElement('canvas');
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+            canvas.getContext('2d').globalCompositeOperation = 'source-over';
+            return canvas;
+        }
+
+        function addLayer() {
+            const canvas = createLayer();
+            document.getElementById('canvasContainer').appendChild(canvas);
+            layers.push(canvas);
+            activeLayerIndex = layers.length - 1;
+            activeCtx = layers[activeLayerIndex].getContext('2d');
+            
+            canvas.addEventListener('mousedown', startPaint);
+            canvas.addEventListener('mouseup', endPaint);
+            canvas.addEventListener('mousemove', draw);
+            canvas.addEventListener('change', saveCanvas);
+
+            currentColor[activeLayerIndex] = colorPalette[activeLayerIndex % colorPalette.length];
+            activeCtx.strokeStyle = currentColor[activeLayerIndex];
+
+            updateLayersUI();
+        }
+
+        function deleteLayer() {
+            if (layers.length > 1) {
+                layers[activeLayerIndex].remove();
+                layers.splice(activeLayerIndex, 1);
+                activeLayerIndex = Math.max(activeLayerIndex - 1, 0);
+                activeCtx = layers[activeLayerIndex].getContext('2d');
+                updateLayersUI();
+            }
+        }
+
+        function updateLayersUI() {
+            const layersDiv = document.getElementById('layers');
+            layersDiv.innerHTML = '';
+            layers.forEach((canvas, index) => {
+                const layerDiv = document.createElement('div');
+                layerDiv.classList.add('layer');
+                if (index === activeLayerIndex) {
+                    layerDiv.classList.add('active');
+                }
+                layerDiv.textContent = 'Layer ' + (index + 1);
+                layerDiv.style.color = colorPalette[index % colorPalette.length];
+                layerDiv.addEventListener('click', () => {
+                    activeLayerIndex = index;
+                    activeCtx = layers[activeLayerIndex].getContext('2d');
+                    updateLayersUI();
+                });
+                layersDiv.appendChild(layerDiv);
+            });
+        }
+
+        function undo() {
+            if (undoStack.length) {
+                redoStack.push(undoStack.pop());
+                let savedLayers = undoStack[undoStack.length - 1] || [];
+                layers.forEach((layer, index) => {
+                    let ctx = layer.getContext('2d');
+                    ctx.clearRect(0, 0, layer.width, layer.height);
+                    let img = new Image();
+                    img.onload = function() {
+                        ctx.drawImage(img, 0, 0);
+                    };
+                    img.src = savedLayers[index] || layer.toDataURL();
+                });
+            }
+        }
+
+        function redo() {
+            if (redoStack.length) {
+                let savedLayers = redoStack.pop();
+                undoStack.push(savedLayers);
+                layers.forEach((layer, index) => {
+                    let ctx = layer.getContext('2d');
+                    ctx.clearRect(0, 0, layer.width, layer.height);
+                    let img = new Image();
+                    img.onload = function() {
+                        ctx.drawImage(img, 0, 0);
+                    };
+                    img.src = savedLayers[index] || layer.toDataURL();
+                });
+            }
+        }
+
+        document.getElementById('undoButton').addEventListener('click', undo);
+        document.getElementById('redoButton').addEventListener('click', redo);
+        document.getElementById('newLayer').addEventListener('click', addLayer);
+        document.getElementById('deleteLayer').addEventListener('click', deleteLayer);
+
+        addLayer();
+    </script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Manrope:wght@200;500;800&display=swap');
+
+        * {
+            transition: all 0.5s ease;
+        }
+
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background-image: radial-gradient(circle at top left, rgba(48, 48, 68, 1) 35%, rgba(0, 0, 18, 1) 100%);
+            font-family: 'Manrope', sans-serif !important;
+            color: #fefefe !important;
+            margin: 0;
+            padding: 0;
+        }
+
+        .controls {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 0.5rem;
+            position: fixed;
+            border: 1px solid #fefefe;
+            box-shadow: inset 0px 4px 15px rgba(0, 0, 0, 0.5);
+            background-color: rgba(48, 48, 68, .5);
+            border-radius: 12px;
+            padding: 10px;
+            z-index: 20;
+
+        }
+
+        #controlPalette {
+            left: 10px;
+            bottom: 10px;
+        }
+
+        #controlMain, #controlUndo, #controlRedo {
+            padding: 0px;
+            background-color: transparent;
+            box-shadow: none;
+            border: none;
+
+        }
+
+        #controlUndo {
+            left: 10px;
+        }
+
+        #controlRedo {
+            right: 10px;
+        }
+
+        #controlUndo button, #controlRedo button {
+            padding: 0.5rem;
+        }
+
+        #controlMain {
+            left: 10px;
+            bottom: 70px;
+        }
+
+        #controlLayers {
+            right: 10px;
+            top: 10px;
+        }
+
+        button, input, select {
+            font-size: 1rem;
+            text-align: center;
+            padding: 0.5rem 0.7rem;
+            background-color: transparent;
+            font-family: 'Manrope', sans-serif !important;
+            color: #f5f5f5;
+            border: solid #f5f5f5 1px;
+            box-shadow: inset 0px 2px 10px rgba(0, 0, 0, 0.5);
+            text-shadow: 0px 2px 7px rgba(0, 0, 0, .25);
+            cursor: pointer;
+            border-radius: 8px;
+        }
+
+        button:hover, input:hover, .layer:hover {
+            background-color: rgba(0, 0, 18, .25);
+            border-radius: 6px;
+        }
+
+        .colorButton {
+            border: none;
+            height: 30px;
+            width: 30px;
+            border-radius: 50%;
+            cursor: pointer;
+        }
+
+        input[type=range] {
+            -webkit-appearance: none;
+            height: 20px;
+            outline: none;
+        }
+
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 25px;
+            height: 25px;
+            border-radius: 50%;
+            border: 2px solid #fff;
+            cursor: pointer;
+        }
+
+        #layers {
+            display: flex;
+            flex-direction: column;
+            margin-top: 10px;
+        }
+
+        .layer {
+            color: #fefefe;
+            margin-bottom: 5px;
+            padding: 5px;
+            border-radius: 6px;
+            background-color: transparent;
+        }
+
+        .layer.active {
+            background-color: rgba(0, 0, 18, .5);
+        }
+
+        svg {
+            fill: #f5f5f5;
+            scale: 1.5;
+            height: 16px;
+        }
+
+        canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            cursor: crosshair;
+        }
+    </style>
+</body>
+</html>
