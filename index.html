@@ -136,10 +136,10 @@
 
             activeCtx.strokeStyle = currentColor[activeLayerIndex];
 
-            activeCtx.lineTo(e.clientX - layers[activeLayerIndex].offsetLeft, e.clientY - layers[activeLayerIndex].offsetTop);
+            activeCtx.lineTo(e.pageX - layers[activeLayerIndex].offsetLeft, e.pageY - layers[activeLayerIndex].offsetTop);
             activeCtx.stroke();
             activeCtx.beginPath();
-            activeCtx.moveTo(e.clientX - layers[activeLayerIndex].offsetLeft, e.clientY - layers[activeLayerIndex].offsetTop);
+            activeCtx.moveTo(e.pageX - layers[activeLayerIndex].offsetLeft, e.pageY - layers[activeLayerIndex].offsetTop);
             saveState();
         }
 
@@ -207,10 +207,10 @@
             if (painting) {
                 activeCtx.globalCompositeOperation = isErasing ? 'destination-out' : 'source-over';
                 activeCtx.lineWidth = isErasing ? 10 : currentSize;
-                activeCtx.lineTo(e.clientX, e.clientY);
+                activeCtx.lineTo(e.pageX, e.pageY);
                 activeCtx.stroke();
                 activeCtx.beginPath();
-                activeCtx.moveTo(e.clientX, e.clientY);
+                activeCtx.moveTo(e.pageX, e.pageY);
             }
         });
 
